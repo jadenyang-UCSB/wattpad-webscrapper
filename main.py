@@ -32,12 +32,19 @@ def selecting_button(driver, element, wait):
     
 
 def getting_comments(driver, chapter_link, wait):
-    story_details = []
     chapterComments = []
     driver.get(chapter_link)
     commentContainer = wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="story-part-comments"]/div')))
     selecting_button(driver, commentContainer, wait)
+
     comments = commentContainer.find_elements(By.CLASS_NAME, 'comment-card-container')
+
+    story_stats = wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'story-stats')]")))
+
+    views = story_stats.find_element(By.CLASS_NAME, 'reads').text
+    likes = story_stats.find_element(By.CLASS_NAME, 'votes').text
+    numberofComment = story_stats.find_element(By.CLASS_NAME, 'comments').text
+    
     for i in comments:
         text = i.find_element(By.TAG_NAME, 'pre')
         print(text.text)
@@ -45,6 +52,9 @@ def getting_comments(driver, chapter_link, wait):
     
     driver.back()
     return {"link" : chapter_link, 
+            "views": views,
+            "likes": likes,
+            "number of comments": numberofComment,
             "comments" : chapterComments}
 
 
@@ -55,19 +65,29 @@ def get_link_from_story(driver, story_link, wait):
     links = chaperContainer.find_elements(By.TAG_NAME,"a")
     # for link in links:
     for link in links:
-        # print(link.get_attribute("href"))
         entry = getting_comments(driver, link.get_attribute("href"), wait)
+        json_dump.append(entry)
         # json_dump.append(entry)
+    
+        with open("wattpad.json", "r", encoding="utf-8") as f:
+            try:
+                json_dump = json.load(f)
+            except json.decoder.JSONDecodeError as e:
+                print(f"Failed to decode JSON: {e}")
+            except ValueError as e:
+                print(f"Value error: {e}")
+
         
         with open("wattpad.json", "w", encoding="utf-8") as f:
-            json.dump(entry, f, indent=4, ensure_ascii=False)
+            json_dump.append(entry)
+            json.dump(json_dump, f, indent=4, ensure_ascii=False)
     
 
 
 def main():
     driver = webdriver.Chrome()
     wait = WebDriverWait(driver, 10)
-
+    hrefSeen = []
     genreLinks = ["https://www.wattpad.com/stories/lgbt", "https://www.wattpad.com/stories/shortstory", "https://www.wattpad.com/stories/poetry","https://www.wattpad.com/stories/romance",]
     
     for genre in genreLinks:
@@ -81,7 +101,8 @@ def main():
         
         for a in hrefLinks:
             wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="scroll-div"]/div/ul')))
-            if a and "https://www.wattpad.com/story" in a:
+            if a and "https://www.wattpad.com/story" in a and a not in hrefSeen:
+                hrefSeen.append(a)
                 get_link_from_story(driver, a, wait)
                 driver.back()
     
