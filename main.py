@@ -63,18 +63,26 @@ def get_link_from_story(driver, story_link, wait):
     driver.get(story_link)
     chaperContainer = wait.until(EC.presence_of_element_located((By.XPATH, "/html/body/div[3]/div[2]/div[1]/div[7]")))
     links = chaperContainer.find_elements(By.TAG_NAME,"a")
-    # for link in links:
+    hrefSeen = []
     for link in links:
-        entry = getting_comments(driver, link.get_attribute("href"), wait)
-        json_dump.append(entry)
+        if(link.text in hrefSeen):
+            continue
+        hrefSeen.append(link.text)
+        try:
+            entry = getting_comments(driver, link.get_attribute("href"), wait)
+        except TimeoutException:
+            continue
+        # json_dump.append(entry)
         # json_dump.append(entry)
     
         with open("wattpad.json", "r", encoding="utf-8") as f:
             try:
                 json_dump = json.load(f)
             except json.decoder.JSONDecodeError as e:
+                json_dump = []
                 print(f"Failed to decode JSON: {e}")
             except ValueError as e:
+                json_dump = []
                 print(f"Value error: {e}")
 
         
@@ -99,7 +107,7 @@ def main():
         for link in story_links:
             hrefLinks.append(link.get_attribute("href"))
         
-        for a in hrefLinks:
+        for a in set(hrefLinks):
             wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="scroll-div"]/div/ul')))
             if a and "https://www.wattpad.com/story" in a and a not in hrefSeen:
                 hrefSeen.append(a)
