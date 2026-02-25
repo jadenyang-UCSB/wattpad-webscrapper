@@ -7,6 +7,16 @@ from selenium.common.exceptions import NoSuchElementException, StaleElementRefer
 import time
 import logging
 import json
+import re
+
+logging.basicConfig(
+    level = logging.INFO,
+    format = '%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("logging_info.log")
+    ]
+)
 
 def scrollingDown(driver):
     last_height = 0
@@ -28,6 +38,7 @@ def selecting_button(driver, element, wait):
             button = div_element.find_element(By.TAG_NAME, 'button')
             driver.execute_script("arguments[0].click();",button)
         except (NoSuchElementException, StaleElementReferenceException, TimeoutException):
+            logging.info("Pressing comment button has finished")
             break
     
 
@@ -46,11 +57,13 @@ def getting_comments(driver, chapter_link, wait):
     numberofComment = story_stats.find_element(By.CLASS_NAME, 'comments').text
     
     for i in comments:
-        text = i.find_element(By.TAG_NAME, 'pre')
-        print(text.text)
-        chapterComments.append(text.text)
+        try:
+            text = i.find_element(By.TAG_NAME, 'pre')
+            chapterComments.append(text.text)
+        except:
+            logging.warning("ONE comment couldn't be processed")
+            continue
     
-    driver.back()
     return {"link" : chapter_link, 
             "views": views,
             "likes": likes,
@@ -59,61 +72,108 @@ def getting_comments(driver, chapter_link, wait):
 
 
 def get_link_from_story(driver, story_link, wait):
-    json_dump = []
+    full_text = []
     driver.get(story_link)
     chaperContainer = wait.until(EC.presence_of_element_located((By.XPATH, "/html/body/div[3]/div[2]/div[1]/div[7]")))
     links = chaperContainer.find_elements(By.TAG_NAME,"a")
     hrefSeen = []
-    for link in links:
-        if(link.text in hrefSeen):
-            continue
-        hrefSeen.append(link.text)
-        try:
-            entry = getting_comments(driver, link.get_attribute("href"), wait)
-        except TimeoutException:
-            continue
-        # json_dump.append(entry)
-        # json_dump.append(entry)
-    
-        with open("wattpad.json", "r", encoding="utf-8") as f:
-            try:
-                json_dump = json.load(f)
-            except json.decoder.JSONDecodeError as e:
-                json_dump = []
-                print(f"Failed to decode JSON: {e}")
-            except ValueError as e:
-                json_dump = []
-                print(f"Value error: {e}")
+    title = driver.find_element(By.CLASS_NAME, "gF-N5").text
+    logging.info(f"Looking into {title}")
+    stats = driver.find_elements(By.CLASS_NAME, "_0jt-y")
+    chapter_statistics = []
 
-        
-        with open("wattpad.json", "w", encoding="utf-8") as f:
-            json_dump.append(entry)
+    for stat in stats:
+        try:
+            sr = stat.find_element(By.XPATH,'.//span[@class="sr-only"]')
+            clean = re.sub(r'[A-Za-z]', '', sr.text).strip()
+            chapter_statistics.append(clean)
+
+        except Exception as e:
+            logging.warning(f"An error has occured, look at {e}")
+
+    for story in links:
+        if story and story.get_attribute("href") not in hrefSeen:
+            hrefSeen.append(story.get_attribute("href"))
+
+    for link in hrefSeen:
+        try:
+            entry = getting_comments(driver, link, wait)
+            full_text.append(entry)
+        except TimeoutException:
+            logging.warning(f"Took to long to load. Skipping {link}")
+            continue
+
+        driver.get(story_link)
+    # json_dump.append(entry)
+    with open("wattpad.json", "r", encoding="utf-8") as f:
+        try:
+            json_dump = json.load(f)
+        except json.decoder.JSONDecodeError as e:
+            json_dump = []
+            logging.warning(f"Failed to decode JSON: {e}")
+        except ValueError as e:
+            json_dump = []
+            logging.warning(f"Value error: {e}")
+        except:
+            logging.warning(f"It is getting any error's in general{e}")
+            json_dump = []
+    
+    with open("wattpad.json", "w", encoding="utf-8") as f:
+        try:
+            json_dump.append(
+                {   "Title" : title,
+                    "Story Link" : story_link,
+                    "Reads" : chapter_statistics[0],
+                    "Votes" : chapter_statistics[1],
+                    "Story Details" : full_text}
+                )
             json.dump(json_dump, f, indent=4, ensure_ascii=False)
+        except:
+            logging.warning(f"Couldn't dump one of the stories")
     
 
 
 def main():
     driver = webdriver.Chrome()
     wait = WebDriverWait(driver, 10)
-    hrefSeen = []
     genreLinks = ["https://www.wattpad.com/stories/lgbt", "https://www.wattpad.com/stories/shortstory", "https://www.wattpad.com/stories/poetry","https://www.wattpad.com/stories/romance",]
-    
+    json_dump = []
     for genre in genreLinks:
         driver.get(genre)
         container = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="scroll-div"]/div/ul')))
         scrollingDown(driver)
         story_links = container.find_elements(By.TAG_NAME,"a")
         hrefLinks = []
+
         for link in story_links:
-            hrefLinks.append(link.get_attribute("href"))
+            if(link.get_attribute("href") not in hrefLinks and "https://www.wattpad.com/story" in link.get_attribute("href")):
+                hrefLinks.append(link.get_attribute("href"))
         
-        for a in set(hrefLinks):
+        for a in hrefLinks:
             wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="scroll-div"]/div/ul')))
-            if a and "https://www.wattpad.com/story" in a and a not in hrefSeen:
-                hrefSeen.append(a)
+            if a and "https://www.wattpad.com/story" in a:
                 get_link_from_story(driver, a, wait)
-                driver.back()
+                logging.info("Finished one story")
+                driver.get(genre)
     
 
 
 main()
+
+
+#  with open("wattpad.json", "r", encoding="utf-8") as f:
+#                     try:
+#                         json_dump = json.load(f)
+#                     except json.decoder.JSONDecodeError as e:
+#                         json_dump = []
+#                         print(f"Failed to decode JSON: {e}")
+#                     except ValueError as e:
+#                         json_dump = []
+#                         print(f"Value error: {e}")
+                
+#                 with open("wattpad.json", "w", encoding="utf-8") as f:
+#                     newList = {
+#                         "author": "Me",
+
+#                         "story_details": whole_list,
+#                     }
