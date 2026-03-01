@@ -2,18 +2,18 @@
 ## Purpose
     This webscraper scrapes wattpad genres and stories. This webscraper gathers the title, story link, reads, votes, and comments of each story.
 ## Format of the data
-    "Title": "Her Prison, Her Pleasure(Intersex)",
-    "Story Link": "https://www.wattpad.com/story/407361565-her-prison-her-pleasure-intersex",
-    "Reads": "101,291",
-    "Votes": "2,446",
+    "Title": "(Titles)",
+    "Story Link": (Link of the wattpad general story),
+    "Reads": "Amount of reads",
+    "Votes": "Amount of votes",
     "Story Details": 
         {
-            "link": "https://www.wattpad.com/1606664001-her-prison-her-pleasure-intersex-prologue",
-            "views": "6.5K",
-            "likes": "73",
-            "number of comments": "1",
+            "link": "(Chapter link)",
+            "views": "(views on chapter)",
+            "likes": "(likes on chapter)",
+            "number of comments": "(number of comments)",
             "comments": [
-                "Touche"
+                "(Exact comments)"
             ]
         },
 ## How it works.
