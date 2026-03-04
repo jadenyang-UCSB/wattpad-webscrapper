@@ -18,6 +18,7 @@
         },
 ## How it works.
 
-## Media Neuroscience Lab
-# Undergraduate Researcher -- Jaden
-# Undergraduate Researcher -- Krithi
+## Contacts
+    Media Neuroscience Lab
+    Undergraduate Researcher -- Jaden
+    Undergraduate Researcher -- Krithi
