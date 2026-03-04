@@ -1,7 +1,11 @@
-# Wattpad Scraper
-## Purpose
+Wattpad Scraper
+====
+
+Purpose
+----
     This webscraper scrapes wattpad genres and stories. This webscraper gathers the title, story link, reads, votes, and comments of each story.
-## Format of the data
+Format of the data
+----
     "Title": "(Titles)",
     "Story Link": (Link of the wattpad general story),
     "Reads": "Amount of reads",
@@ -16,8 +20,11 @@
                 "(Exact comments)"
             ]
         },
-## How it works.
-
+How it works
+----
+    1) Go to the variable called genreLinks
+    2) Put the Wattpad links that you wish to put in, such as https://www.wattpad.com/stories/lgbt.
+    3) In your terminal, input python3 main.py
 ## Contacts
     Media Neuroscience Lab
     Undergraduate Researcher -- Jaden
